@@ -1,6 +1,6 @@
 # ZSH Workstation example
 
-This example demonstrate the setup of a ZSH workstation with *cloud-init* support.
+This example demonstrate the setup of a ZSH workstation with the d2vm bootstrap support.
 
 *Dockerfile*
 ```dockerfile
@@ -32,7 +32,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends \
       tmux \
       htop \
       lsb-core \
-      cloud-init \
       cloud-guest-utils
 
 # Create user with sudo privileged and passwordless sudo

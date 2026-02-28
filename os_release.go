@@ -98,6 +98,25 @@ func (r OSRelease) SupportsLUKS() bool {
 	}
 }
 
+func (r OSRelease) SupportsBootstrap() bool {
+	switch r.ID {
+	case ReleaseUbuntu:
+		return true
+	case ReleaseDebian:
+		return true
+	case ReleaseKali:
+		return true
+	case ReleaseCentOS:
+		return true
+	case ReleaseRocky:
+		return true
+	case ReleaseAlmaLinux:
+		return true
+	default:
+		return false
+	}
+}
+
 func ParseOSRelease(s string) (OSRelease, error) {
 	env, err := godotenv.Parse(strings.NewReader(s))
 	if err != nil {

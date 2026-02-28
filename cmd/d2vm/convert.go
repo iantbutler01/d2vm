@@ -88,6 +88,7 @@ var (
 				d2vm.WithBootSize(bootSize),
 				d2vm.WithBootFS(d2vm.BootFS(bootFS)),
 				d2vm.WithLuksPassword(luksPassword),
+				d2vm.WithBootstrap(includeBootstrap),
 				d2vm.WithKeepCache(keepCache),
 				d2vm.WithPlatform(platform),
 				d2vm.WithPull(pull),

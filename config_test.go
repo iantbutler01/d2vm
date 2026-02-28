@@ -30,7 +30,7 @@ import (
 	"go.linka.cloud/d2vm/pkg/exec"
 )
 
-func testConfig(t *testing.T, ctx context.Context, name, img string, config Config, luks, grubBIOS, grubEFI bool) func() error {
+func testConfig(t *testing.T, ctx context.Context, name, img string, config Config, luks, grubBIOS, grubEFI, bootstrap bool) func() error {
 	require.NoError(t, docker.Pull(ctx, Arch, img))
 	tmpPath := filepath.Join(os.TempDir(), "d2vm-tests", strings.NewReplacer(":", "-", ".", "-").Replace(name))
 	require.NoError(t, os.MkdirAll(tmpPath, 0755))
@@ -51,7 +51,10 @@ func testConfig(t *testing.T, ctx context.Context, name, img string, config Conf
 	if !r.SupportsLUKS() && luks {
 		t.Skipf("LUKS not supported for %s", r.Version)
 	}
-	d, err := NewDockerfile(r, img, "root", "", luks, grubBIOS, grubEFI)
+	if bootstrap && !r.SupportsBootstrap() {
+		t.Skipf("bootstrap not supported for %s", r.Version)
+	}
+	d, err := NewDockerfile(r, img, "root", "", bootstrap, luks, grubBIOS, grubEFI)
 	require.NoError(t, err)
 	logrus.Infof("docker image based on %s", d.Release.Name)
 	p := filepath.Join(tmpPath, docker.FormatImgName(name))
@@ -148,7 +151,7 @@ func TestConfig(t *testing.T) {
 	}
 	exec.SetDebug(true)
 
-	names := []string{"luks", "grub-bios", "grub-efi"}
+	names := []string{"luks", "grub-bios", "grub-efi", "bootstrap"}
 	bools := []bool{false, true}
 
 	for _, test := range tests {
@@ -158,27 +161,30 @@ func TestConfig(t *testing.T) {
 			for _, luks := range bools {
 				for _, grubBIOS := range bools {
 					for _, grubEFI := range bools {
-						luks := luks
-						grubBIOS := grubBIOS
-						grubEFI := grubEFI
-						n := []string{test.image}
-						for i, v := range []bool{luks, grubBIOS, grubEFI} {
-							if v {
-								n = append(n, names[i])
+						for _, bootstrap := range bools {
+							luks := luks
+							grubBIOS := grubBIOS
+							grubEFI := grubEFI
+							bootstrap := bootstrap
+							n := []string{test.image}
+							for i, v := range []bool{luks, grubBIOS, grubEFI, bootstrap} {
+								if v {
+									n = append(n, names[i])
+								}
 							}
+							name := strings.Join(n, "-")
+							var clean func() error
+							t.Run(name, func(t *testing.T) {
+								ctx, cancel := context.WithCancel(context.Background())
+								defer cancel()
+								clean = testConfig(t, ctx, name, test.image, test.config, luks, grubBIOS, grubEFI, bootstrap)
+							})
+							defer func() {
+								if clean != nil {
+									_ = clean()
+								}
+							}()
 						}
-						name := strings.Join(n, "-")
-						var clean func() error
-						t.Run(name, func(t *testing.T) {
-							ctx, cancel := context.WithCancel(context.Background())
-							defer cancel()
-							clean = testConfig(t, ctx, name, test.image, test.config, luks, grubBIOS, grubEFI)
-						})
-						defer func() {
-							if clean != nil {
-								_ = clean()
-							}
-						}()
 					}
 				}
 			}

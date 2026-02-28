@@ -29,7 +29,8 @@ type convertOptions struct {
 	bootSize  uint64
 	bootFS    BootFS
 
-	luksPassword string
+	luksPassword     string
+	includeBootstrap bool
 
 	keepCache bool
 	platform  string
@@ -112,6 +113,12 @@ func WithBootFS(bootFS BootFS) ConvertOption {
 func WithLuksPassword(password string) ConvertOption {
 	return func(o *convertOptions) {
 		o.luksPassword = password
+	}
+}
+
+func WithBootstrap(enable bool) ConvertOption {
+	return func(o *convertOptions) {
+		o.includeBootstrap = enable
 	}
 }
 

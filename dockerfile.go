@@ -65,6 +65,7 @@ type Dockerfile struct {
 	Password       string
 	Release        OSRelease
 	NetworkManager NetworkManager
+	Bootstrap      bool
 	Luks           bool
 	GrubBIOS       bool
 	GrubEFI        bool
@@ -79,8 +80,11 @@ func (d Dockerfile) Render(w io.Writer) error {
 	return d.tmpl.Execute(w, d)
 }
 
-func NewDockerfile(release OSRelease, img, password string, networkManager NetworkManager, luks, grubBIOS, grubEFI bool) (Dockerfile, error) {
-	d := Dockerfile{Release: release, Image: img, Password: password, NetworkManager: networkManager, Luks: luks, GrubBIOS: grubBIOS, GrubEFI: grubEFI}
+func NewDockerfile(release OSRelease, img, password string, networkManager NetworkManager, bootstrap, luks, grubBIOS, grubEFI bool) (Dockerfile, error) {
+	if bootstrap && !release.SupportsBootstrap() {
+		return Dockerfile{}, fmt.Errorf("bootstrap is not supported for %s", release.ID)
+	}
+	d := Dockerfile{Release: release, Image: img, Password: password, NetworkManager: networkManager, Bootstrap: bootstrap, Luks: luks, GrubBIOS: grubBIOS, GrubEFI: grubEFI}
 	var net NetworkManager
 	switch release.ID {
 	case ReleaseDebian:

@@ -41,6 +41,7 @@ var (
 	bootSize         uint64
 	bootFS           string
 	luksPassword     string
+	includeBootstrap bool
 
 	keepCache bool
 	platform  string
@@ -124,6 +125,7 @@ func buildFlags() *pflag.FlagSet {
 	flags.StringVar(&bootFS, "boot-fs", "", "Filesystem to use for the boot partition, ext4 or fat32")
 	flags.StringVar(&bootloader, "bootloader", "", "Bootloader to use: syslinux, grub, grub-bios, grub-efi, defaults to syslinux on amd64 and grub-efi on arm64")
 	flags.StringVar(&luksPassword, "luks-password", "", "Password to use for the LUKS encrypted root partition. If not set, the root partition will not be encrypted")
+	flags.BoolVar(&includeBootstrap, "include-bootstrap", false, "Install the d2vm bootstrap service that runs init scripts from /dev/vdb on first boot")
 	flags.BoolVar(&keepCache, "keep-cache", false, "Keep the images after the build")
 	flags.StringVar(&platform, "platform", d2vm.Arch, "Platform to use for the container disk image, linux/arm64 and linux/arm64 are supported")
 	flags.BoolVar(&pull, "pull", false, "Always pull docker image")

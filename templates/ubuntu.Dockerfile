@@ -60,6 +60,81 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends cr
     update-initramfs -u -v
 {{- end }}
 
+{{- if .Bootstrap }}
+RUN cat <<'EOF' >/usr/local/sbin/d2vm-bootstrap.sh
+#!/bin/bash
+set -euo pipefail
+
+MNT=/mnt/d2vm-bootstrap
+DISK=/dev/vdb
+DONE=/var/lib/d2vm-bootstrap/done
+
+if [ -f "$DONE" ]; then
+  exit 0
+fi
+
+if [ ! -b "$DISK" ]; then
+  exit 0
+fi
+
+mkdir -p "$MNT"
+
+cleanup() {
+  if mountpoint -q "$MNT"; then
+    umount "$MNT" || true
+  fi
+}
+trap cleanup EXIT
+
+if mountpoint -q "$MNT"; then
+  umount "$MNT" || true
+fi
+
+if ! mount -o ro "$DISK" "$MNT"; then
+  exit 0
+fi
+
+SCRIPT="$MNT/init.sh"
+if [ ! -f "$SCRIPT" ]; then
+  exit 0
+fi
+
+if /bin/bash "$SCRIPT"; then
+  mkdir -p "$(dirname "$DONE")"
+  touch "$DONE"
+fi
+EOF
+RUN chmod 0755 /usr/local/sbin/d2vm-bootstrap.sh && \
+    cat <<'EOF' >/etc/systemd/system/d2vm-bootstrap.service
+[Unit]
+Description=D2VM bootstrap loader
+After=local-fs.target
+ConditionPathExists=/dev/vdb
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/d2vm-bootstrap.sh
+
+[Install]
+WantedBy=multi-user.target
+EOF
+RUN cat <<'EOF' >/etc/systemd/system/d2vm-bootstrap.timer
+[Unit]
+Description=Run D2VM bootstrap loader
+
+[Timer]
+OnBootSec=30s
+AccuracySec=30s
+Persistent=true
+Unit=d2vm-bootstrap.service
+
+[Install]
+WantedBy=timers.target
+EOF
+RUN mkdir -p /etc/systemd/system/timers.target.wants && \
+    ln -sf /etc/systemd/system/d2vm-bootstrap.timer /etc/systemd/system/timers.target.wants/d2vm-bootstrap.timer
+{{- end }}
+
 # needs to be after update-initramfs
 {{- if not .Grub }}
 RUN mv $(ls -t /boot/vmlinuz-* | head -n 1) /boot/vmlinuz && \

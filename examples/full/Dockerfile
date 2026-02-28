@@ -26,7 +26,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends \
       tmux \
       htop \
       lsb-core \
-      cloud-init \
       cloud-guest-utils
 
 # Create user with sudo privileged and passwordless sudo

@@ -51,7 +51,7 @@ func Convert(ctx context.Context, img string, opts ...ConvertOption) error {
 	}
 
 	if !o.raw {
-		d, err := NewDockerfile(r, img, o.password, o.networkManager, o.luksPassword != "", o.hasGrubBIOS(), o.hasGrubEFI())
+		d, err := NewDockerfile(r, img, o.password, o.networkManager, o.includeBootstrap, o.luksPassword != "", o.hasGrubBIOS(), o.hasGrubEFI())
 		if err != nil {
 			return err
 		}
