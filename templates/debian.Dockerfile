@@ -84,7 +84,8 @@ if [ -f "$DONE" ]; then
 fi
 
 if [ ! -b "$DISK" ]; then
-  exit 0
+  echo "d2vm-bootstrap: missing bootstrap disk $DISK" >&2
+  exit 40
 fi
 
 mkdir -p "$MNT"
@@ -101,17 +102,30 @@ if mountpoint -q "$MNT"; then
 fi
 
 if ! mount -o ro "$DISK" "$MNT"; then
-  exit 0
+  echo "d2vm-bootstrap: failed to mount $DISK at $MNT" >&2
+  exit 41
 fi
 
-SCRIPT="$MNT/init.sh"
-if [ ! -f "$SCRIPT" ]; then
-  exit 0
+SCRIPT=""
+if [ -f "$MNT/init.sh" ]; then
+  SCRIPT="$MNT/init.sh"
+elif [ -f "$MNT/INIT.SH" ]; then
+  SCRIPT="$MNT/INIT.SH"
+fi
+
+if [ -z "$SCRIPT" ]; then
+  echo "d2vm-bootstrap: missing init script (expected $MNT/init.sh or $MNT/INIT.SH)" >&2
+  ls -la "$MNT" >&2 || true
+  exit 42
 fi
 
 if /bin/bash "$SCRIPT"; then
   mkdir -p "$(dirname "$DONE")"
   touch "$DONE"
+else
+  rc=$?
+  echo "d2vm-bootstrap: init script failed with exit code $rc ($SCRIPT)" >&2
+  exit 43
 fi
 EOF
 RUN chmod 0755 /usr/local/sbin/d2vm-bootstrap.sh && \
