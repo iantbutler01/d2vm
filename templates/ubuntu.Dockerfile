@@ -87,11 +87,6 @@ RUN printf '%s\n' \
     'fi' \
     'echo "d2vm-bootstrap: $(date -Iseconds) begin disk=$DISK mnt=$MNT"' \
     '' \
-    'if [ -f "$DONE" ]; then' \
-    '  echo "d2vm-bootstrap: already completed marker=$DONE"' \
-    '  exit 0' \
-    'fi' \
-    '' \
     'if [ ! -b "$DISK" ]; then' \
     '  echo "d2vm-bootstrap: missing bootstrap disk $DISK" >&2' \
     '  exit 40' \
@@ -129,9 +124,17 @@ RUN printf '%s\n' \
     '  exit 42' \
     'fi' \
     '' \
+    '# The marker records which bootstrap script ran: a forked VM boots with a new bootstrap' \
+    '# disk (its own network and identity) and must run it even though its disk says done.' \
+    'DIGEST="$(sha256sum "$SCRIPT" | cut -d" " -f1)"' \
+    'if [ -f "$DONE" ] && [ "$(cat "$DONE")" = "$DIGEST" ]; then' \
+    '  echo "d2vm-bootstrap: already completed digest=$DIGEST"' \
+    '  exit 0' \
+    'fi' \
+    '' \
     'if /bin/bash "$SCRIPT"; then' \
     '  mkdir -p "$(dirname "$DONE")"' \
-    '  touch "$DONE"' \
+    '  echo "$DIGEST" >"$DONE"' \
     '  echo "d2vm-bootstrap: init script completed marker written"' \
     'else' \
     '  rc=$?' \
